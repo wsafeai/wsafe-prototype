@@ -1,0 +1,90 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WSafe AI — Concept Prototype</title>
+<style>
+:root{--bg:#0d1420;--p:#162132;--b:#26364d;--t:#e6edf6;--m:#8fa3bd;--a:#ff9f1c;--r:#ff4d4f;--g:#2ecc71;--bl:#3fa9f5}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,Segoe UI,Arial;background:var(--bg);color:var(--t)}
+header{display:flex;align-items:center;gap:16px;padding:10px 18px;background:#0a101a;border-bottom:1px solid var(--b)}
+.logo{font-weight:800;font-size:20px}.logo b{color:var(--a)}nav button{background:none;border:1px solid var(--b);color:var(--t);padding:6px 12px;border-radius:6px;cursor:pointer;margin-right:6px}
+nav button.on{background:var(--a);color:#000;border-color:var(--a)}.tag{font-size:11px;padding:2px 6px;border-radius:4px;font-weight:700}
+.real{background:#14532d;color:#86efac}.sim{background:#4a3410;color:#fcd34d}.heur{background:#3b2a5a;color:#d8b4fe}
+main{padding:14px 18px}.grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}.card{background:var(--p);border:1px solid var(--b);border-radius:10px;padding:12px}
+h2{margin:0 0 8px;font-size:15px}.vw{position:relative}video{width:100%;display:block;border-radius:6px;background:#000}canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ovl{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.7);padding:4px 8px;border-radius:4px;font:12px monospace}.ovl.al{background:rgba(200,0,0,.85)}
+.al-item{border-left:4px solid var(--a);background:#0f1928;padding:7px 9px;margin:6px 0;border-radius:4px;font-size:13px}.al-item.high{border-color:var(--r)}
+.btn{border:0;border-radius:5px;padding:5px 10px;cursor:pointer;font-weight:600;margin:2px}.ok{background:var(--g)}.no{background:var(--r);color:#fff}.re{background:var(--bl);color:#fff}
+.prod{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.prod .card{min-height:150px}.prod h3{margin:0;font-size:14px;color:var(--a)}.prod small{color:var(--m)}
+.log div{font-size:12px;border-top:1px solid var(--b);padding:4px 0}.muted{color:var(--m)}select,input{background:#0a101a;color:var(--t);border:1px solid var(--b);border-radius:4px;padding:4px}
+.loop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.step{background:#0f1928;border:1px solid var(--b);border-radius:8px;padding:8px 10px;text-align:center;flex:1;min-width:120px}.step.hot{border-color:var(--a);box-shadow:0 0 10px var(--a)}
+.arrow{color:var(--a);font-size:20px}.bars{display:flex;align-items:flex-end;gap:4px;height:140px}.bars div{flex:1;background:var(--bl);border-radius:3px 3px 0 0;position:relative}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.kpi .card b{font-size:26px;display:block}
+footer{padding:10px 18px;color:var(--m);font-size:12px;border-top:1px solid var(--b);margin-top:14px}.hide{display:none}
+</style></head><body>
+<header><div class="logo">WSafe<b>AI</b></div><span class="muted">Hazard intelligence for live CCTV — concept prototype</span>
+<nav style="margin-left:auto"><button data-v="live" class="on">1 · Live View</button><button data-v="review">2 · Competent-Person Review</button><button data-v="route">3 · Product Routing</button><button data-v="dash">4 · Dashboard</button></nav></header>
+<main>
+<section id="live"><div class="grid"><div class="card"><h2>Camera feed <select id="feed"><option value="job">Jobsite (recorded, CC BY-SA 4.0)</option><option value="lab">AXIS M2035-LE lab camera (recorded from live run, Oct 12)</option></select>
+ <span class="tag real">REAL detections</span> <span class="tag heur">PPE = heuristic</span></h2>
+<div class="vw"><video id="vid" src="media/jobsite.mp4" muted playsinline loop controls></video><canvas id="cv"></canvas><div id="ovl" class="ovl">AXIS overlay (mock): WSafe AI monitoring</div></div>
+<p class="muted" id="fnote">Boxes = YOLOX-M person detector (Apache-2.0), pre-computed on this recorded clip at 4 fps and synced to video time. Red zone = excavator swing exclusion zone (configured rule). "Hat/Vest ?" = colour heuristic, <b>not</b> a trained PPE model. Bottom-left text mimics an Axis VAPIX text-overlay alert.</p></div>
+<div class="card"><h2>Hazard alerts <span class="tag real">from detections</span></h2><div id="alerts"></div></div></div></section>
+
+<section id="review" class="hide"><div class="grid"><div class="card"><h2>Competent-person review queue</h2><p class="muted">Every alert waits for a qualified competent person. Nothing is routed or learned from without a human decision.</p><div id="queue"></div></div>
+<div class="card"><h2>Recursive learning loop <span class="tag sim">illustrative</span></h2>
+<div class="loop"><div class="step" id="s1">Camera detects</div><span class="arrow">→</span><div class="step" id="s2">CP reviews</div><span class="arrow">→</span><div class="step" id="s3">Feedback recorded</div><span class="arrow">→</span><div class="step" id="s4">Human-approved improvements</div></div>
+<p class="muted">Human-reviewed alerts help the system improve over time. Changes to site rules or models are only adopted after competent-person sign-off.</p>
+<div class="kpi" style="grid-template-columns:1fr 1fr"><div class="card"><span class="muted">Decisions recorded</span><b id="kd">0</b></div><div class="card"><span class="muted">Agreement rate</span><b id="ka">—</b></div></div>
+<h2 style="margin-top:10px">Decision log</h2><div class="log" id="dlog"><div class="muted">No decisions yet.</div></div></div></div></section>
+
+<section id="route" class="hide"><div class="card"><h2>Confirmed hazards flow to the WSafe AI family <span class="tag sim">simulated hand-offs</span></h2><p class="muted">Confirming an alert creates (mock) records in each relevant product. Product descriptions reflect intended scope; integrations shown are concept mock-ups.</p>
+<div class="prod">
+<div class="card"><h3>HazardLoop</h3><small>hazardloop.com · hazard log & corrective actions</small><div id="p-hl" class="log"></div></div>
+<div class="card"><h3>SafeForm</h3><small>safeform.ai · ergonomic analysis</small><div id="p-sf" class="log"></div></div>
+<div class="card"><h3>InductIQ</h3><small>inductiq.ai · induction/training verification, incident reporting, AI triage, paging, OSHA 300/300A</small><div id="p-iq" class="log"></div></div>
+<div class="card"><h3>EnviSafe</h3><small>envisafe.ai · environmental compliance</small><div id="p-es" class="log"></div></div>
+<div class="card"><h3>WorkSafeStory</h3><small>worksafestory.com · safety stories, Safety Tokens, incident narratives from InductIQ reports</small><div id="p-ws" class="log"></div></div>
+</div></div></section>
+
+<section id="dash" class="hide"><p><span class="tag sim">SIMULATED DATA</span> <span class="muted">Charts below are illustrative, except "this session" counts, which reflect your clicks.</span></p>
+<div class="kpi"><div class="card"><span class="muted">Alerts this session</span><b id="d1">0</b></div><div class="card"><span class="muted">Confirmed</span><b id="d2">0</b></div><div class="card"><span class="muted">Rejected</span><b id="d3">0</b></div><div class="card"><span class="muted">Reclassified</span><b id="d4">0</b></div></div>
+<div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="card"><h2>Hazards per day (simulated, 14 days)</h2><div class="bars" id="bars"></div></div>
+<div class="card"><h2>Alert precision after CP review (simulated trend)</h2><svg id="trend" viewBox="0 0 300 140" width="100%" height="160"></svg></div></div></section>
+</main>
+<footer>Concept prototype — simulated data where marked. © 2026 WorkSafeAgent LLC (WSafe AI). Jobsite footage: "Building construction Moira Close Broadwater Farm Haringey 2025 12" by Acabashi, <a style="color:var(--bl)" href="https://commons.wikimedia.org/wiki/File:Building_construction_Moira_Close_Broadwater_Farm_Haringey_2025_12.webm">Wikimedia Commons</a>, CC BY-SA 4.0; excerpt scaled, annotations added. Lab clip recorded from a loaned AXIS M2035-LE (Oct 12, 2026). Detection boxes are real model output on recorded video; PPE flags are a colour heuristic, not a validated model.</footer>
+<script src="data/tracks.js"></script>
+<script>
+const $=s=>document.querySelector(s),T=window.TRACKS,vid=$('#vid'),cv=$('#cv'),cx=cv.getContext('2d');
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');['live','review','route','dash'].forEach(v=>$('#'+v).classList.toggle('hide',v!=b.dataset.v));});
+$('#feed').onchange=e=>{const j=e.target.value=='job';vid.src=j?'media/jobsite.mp4':'media/axis_lab.mp4';vid.play();$('#fnote').style.opacity=j?1:.5;};
+function frameAt(t){let lo=0,hi=T.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(T.frames[m].t<=t)lo=m;else hi=m-1}return T.frames[lo]}
+let alerts=[],lastAl={},id=0;
+function draw(){requestAnimationFrame(draw);cv.width=vid.clientWidth;cv.height=vid.clientHeight;cx.clearRect(0,0,cv.width,cv.height);
+ if($('#feed').value!='job'||!vid.videoWidth)return;const W=cv.width,H=vid.clientWidth*vid.videoHeight/vid.videoWidth,f=frameAt(vid.currentTime);
+ const z=T.zone,hit=f.d.some(d=>d.z);cx.fillStyle=hit?'rgba(255,0,0,.18)':'rgba(255,170,0,.12)';cx.strokeStyle=hit?'#f33':'#fa0';cx.lineWidth=2;cx.beginPath();z.forEach((p,i)=>cx[i?'lineTo':'moveTo'](p[0]*W,p[1]*H));cx.closePath();cx.fill();cx.stroke();
+ cx.font='12px monospace';cx.fillStyle=cx.strokeStyle;cx.fillText('Exclusion zone: excavator swing',z[0][0]*W+4,z[0][1]*H+14);
+ f.d.forEach(d=>{const[x,y,w,h]=d.b;cx.strokeStyle=d.z?'#f33':'#2ecc71';cx.strokeRect(x*W,y*H,w*W,h*H);cx.fillStyle=cx.strokeStyle;cx.fillText(`person ${d.c.toFixed(2)}`+(d.big?` hat:${d.hat?'Y':'?'} vest:${d.vest?'Y':'?'}`:''),x*W,Math.max(12,y*H-4));});
+ const o=$('#ovl');if(hit){o.className='ovl al';o.textContent='AXIS overlay (mock): WSafe AI ALERT — person in exclusion zone'}else{o.className='ovl';o.textContent='AXIS overlay (mock): WSafe AI monitoring'}
+ const now=vid.currentTime;
+ if(hit&&!(now-(lastAl.z??-99)<6&&now>=lastAl.z)){lastAl.z=now;add('high','Person in excavator exclusion zone','Exclusion zone',f.d.find(d=>d.z).c,now)}
+ const pp=f.d.find(d=>d.big&&!(d.hat&&d.vest));if(pp&&!(now-(lastAl.p??-99)<10&&now>=lastAl.p)){lastAl.p=now;add('low','Possible missing '+(!pp.hat?'hard hat':'hi-vis vest')+' (heuristic)','PPE',pp.c,now)}}
+function add(sev,txt,cat,c,t){const a={id:++id,sev,txt,cat,c,t:t.toFixed(1),st:'pending'};alerts.unshift(a);if(alerts.length>40)alerts.pop();render();}
+function render(){$('#alerts').innerHTML=alerts.slice(0,12).map(a=>`<div class="al-item ${a.sev}"><b>#${a.id} ${a.txt}</b><br><span class="muted">clip t=${a.t}s · conf ${a.c.toFixed(2)} · ${a.st}</span></div>`).join('')||'<span class="muted">Press play — alerts appear as detections cross rules.</span>';
+ const q=alerts.filter(a=>a.st=='pending').slice(0,8);$('#queue').innerHTML=q.map(a=>`<div class="al-item ${a.sev}"><b>#${a.id} ${a.txt}</b> <span class="muted">t=${a.t}s</span><br>
+ <input id="n${a.id}" placeholder="CP note (optional)" style="width:60%"> <select id="r${a.id}"><option>Exclusion zone</option><option>PPE</option><option>Ergonomic</option><option>Environmental</option><option>Not a hazard</option></select><br>
+ <button class="btn ok" onclick="dec(${a.id},'Confirmed')">Confirm</button><button class="btn no" onclick="dec(${a.id},'Rejected')">Reject</button><button class="btn re" onclick="dec(${a.id},'Reclassified')">Reclassify</button></div>`).join('')||'<span class="muted">Queue empty — play the feed to generate alerts.</span>';
+ $('#d1').textContent=alerts.length;['Confirmed','Rejected','Reclassified'].forEach((s,i)=>$('#d'+(i+2)).textContent=log.filter(l=>l.s==s).length);}
+const log=[];
+function dec(i,s){const a=alerts.find(x=>x.id==i);a.st=s.toLowerCase();const note=$('#n'+i).value,cls=s=='Reclassified'?$('#r'+i).value:a.cat;log.unshift({i,s,note,cls,txt:a.txt});
+ $('#dlog').innerHTML=log.map(l=>`<div><b>#${l.i}</b> ${l.s}${l.s=='Reclassified'?' → '+l.cls:''} — ${l.txt}${l.note?' · “'+l.note+'”':''}</div>`).join('');
+ $('#kd').textContent=log.length;$('#ka').textContent=Math.round(100*log.filter(l=>l.s=='Confirmed').length/log.length)+'%';
+ ['s2','s3','s4'].forEach((k,j)=>setTimeout(()=>{document.querySelectorAll('.step').forEach(e=>e.classList.remove('hot'));$('#'+k).classList.add('hot')},j*400));
+ if(s!='Rejected'&&cls!='Not a hazard')route(a,cls,note);render();}
+function route(a,cls,note){const ts=new Date().toLocaleTimeString(),put=(k,t)=>$('#p-'+k).insertAdjacentHTML('afterbegin',`<div>${ts} · ${t}</div>`);
+ put('hl',`HL-${1000+a.id}: ${cls} hazard logged; corrective action assigned (mock)`);
+ put('iq',`Incident/near-miss report #${a.id} opened; crew induction & training records checked; supervisor paged; OSHA 300 recordability flagged for review (mock)`);
+ if(cls=='Ergonomic'||cls=='PPE')put('sf',`Ergonomic posture/lift review requested for worker in alert #${a.id} (mock)`);
+ if(cls=='Environmental')put('es',`Environmental compliance check opened from alert #${a.id} (mock)`);
+ put('ws',`Draft safety story from InductIQ report #${a.id} queued for CP approval; Safety Token pending (mock)`);}
+draw();render();
+const d=[5,7,4,9,6,8,11,7,6,5,4,6,3,4];$('#bars').innerHTML=d.map(v=>`<div style="height:${v*11}px" title="${v}"></div>`).join('');
+const p=[62,64,67,66,70,73,74,77,79,80,82,83,85,86];$('#trend').innerHTML=`<polyline fill="none" stroke="#2ecc71" stroke-width="3" points="${p.map((v,i)=>`${10+i*21},${130-(v-55)*3.5}`).join(' ')}"/><text x="10" y="14" fill="#8fa3bd" font-size="10">62% → 86% (illustrative)</text>`;
+</script></body></html>
